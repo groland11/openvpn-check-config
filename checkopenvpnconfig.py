@@ -2,10 +2,23 @@
 
 import argparse
 import re
+from enum import Enum
+from ipaddress import IPv4Address as ipv4, IPv4Network as ipv4net, AddressValueError
+
+
+class ValType(Enum):
+    """Enumeration for all possible value types"""
+    NONE = 0
+    INT = 1
+    ASCII = 2
+    BOOL = 3
+    ENUM = 4
+    IPADDR = 5
+    IPNET = 6
 
 
 class Keyword():
-    def __init__(self, name, par_len, par_type = None, par_values = None):
+    def __init__(self, name, par_len, par_type = ValType.NONE, par_values = None):
         self.name = name
         self.len = par_len
         self.type = par_type
@@ -27,23 +40,24 @@ def parseargs():
 
 def get_config_keywords():
     """Retrieve list of valid configuration keywords"""
-    keywords = { "port": Keyword("port", 2),
-                 "proto": Keyword("proto", 2),
-                 "dev": Keyword("dev", 2),
-                 "ca": Keyword("ca", 2),
-                 "cert": Keyword("cert", 2),
-                 "key": Keyword("key", 2),
-                 "dh": Keyword("dh", 2),
-                 "server": Keyword("server", 3),
-                 "ifconfig-pool-persist": Keyword("ifconfig-pool-persist", 2),
-                 "keepalive": Keyword("keepalive", 3),
-                 "tls-auth": Keyword("tls-auth", 3),
-                 "cipher": Keyword("cipher", 2),
+    keywords = { "local": Keyword("local", 2, ValType.IPADDR),
+                 "port": Keyword("port", 2, ValType.INT),
+                 "proto": Keyword("proto", 2, ValType.ENUM, ["udp", "tcp"]),
+                 "dev": Keyword("dev", 2, ValType.ASCII),
+                 "ca": Keyword("ca", 2, ValType.ASCII),
+                 "cert": Keyword("cert", 2, ValType.ASCII),
+                 "key": Keyword("key", 2, ValType.ASCII),
+                 "dh": Keyword("dh", 2, ValType.ASCII),
+                 "server": Keyword("server", 3, ValType.IPNET),
+                 "ifconfig-pool-persist": Keyword("ifconfig-pool-persist", 2, ValType.ASCII),
+                 "keepalive": Keyword("keepalive", 3, ValType.INT),
+                 "tls-auth": Keyword("tls-auth", 3, ValType.ASCII),
+                 "cipher": Keyword("cipher", 2, ValType.ASCII),
                  "persist-key": Keyword("persist-key", 1),
                  "persist-tun": Keyword("persist-tun", 1),
-                 "status": Keyword("status", 2),
-                 "verb": Keyword("verb", 2),
-                 "explicit-exit-notify": Keyword("explicit-exit-notify", 2),
+                 "status": Keyword("status", 2, ValType.ASCII),
+                 "verb": Keyword("verb", 2, ValType.INT),
+                 "explicit-exit-notify": Keyword("explicit-exit-notify", 2, ValType.ENUM, ["1", "2"]),
                  }
 
     return keywords
@@ -61,6 +75,39 @@ def check_line(line:str, config_keywords:list) -> None:
     # Check number of words in line
     if len(words) != config_keywords[keyword].len:
         raise(BaseException(f"ERROR: Invalid number of arguments for keyword '{keyword}'"))
+
+    # Check if all values have correct type
+    val_type = config_keywords[keyword].type
+
+    if val_type == ValType.IPNET:
+        try:
+            ipv4net(f"{words[1]}/{words[2]}")
+        except IndexError:
+            raise(BaseException(f"ERROR: Missing IP network address part for keyword '{keyword}'"))
+        except ValueError:
+            raise(BaseException(f"ERROR: Invalid IP network address for keyword '{keyword}'"))
+
+    for word in words[1:]:
+        if not word.isprintable():
+            raise(BaseException(f"ERROR: Invalid characters in value for keyword '{keyword}'"))
+        if val_type == ValType.INT:
+            if not word.isnumeric():
+                raise(BaseException(f"ERROR: Invalid integer value '{word}' for keyword '{keyword}'"))
+        elif val_type == ValType.ASCII:
+            try:
+                word.encode("ascii")
+            except UnicodeEncodeError:
+                raise(BaseException(f"ERROR: Invalid ascii value '{word}' for keyword '{keyword}'"))
+        elif val_type == ValType.ENUM:
+            if config_keywords[keyword].vals is None:
+                raise(BaseException(f"ERROR: No enumeration values defined for keyword '{keyword}'"))
+            if word not in config_keywords[keyword].vals:
+                raise(BaseException(f"ERROR: Invalid enumeration value '{word}' for keyword '{keyword}'"))
+        elif val_type == ValType.IPADDR:
+            try:
+                ip_address = ipv4(word)
+            except AddressValueError:
+                raise(BaseException(f"ERROR: Invalid IP address '{word}' for keyword '{keyword}'"))
 
 
 def check_config(config_file:str, config_keywords:list) -> None:
