@@ -18,7 +18,7 @@ class ValType(Enum):
 
 
 class Keyword():
-    def __init__(self, name, par_len, par_type = ValType.NONE, par_values = None):
+    def __init__(self, name, par_len = 1, par_type = ValType.NONE, par_values = None):
         self.name = name
         self.len = par_len
         self.type = par_type
@@ -53,10 +53,18 @@ def get_config_keywords():
                  "keepalive": Keyword("keepalive", 3, ValType.INT),
                  "tls-auth": Keyword("tls-auth", 3, ValType.ASCII),
                  "cipher": Keyword("cipher", 2, ValType.ASCII),
-                 "persist-key": Keyword("persist-key", 1),
-                 "persist-tun": Keyword("persist-tun", 1),
+                 "compress": Keyword("compress", 2, ValType.ENUM, ["lzo", "lz4", "lz4-v2"]),
+                 "comp-lzo": Keyword("comp-lzo"),
+                 "max-clients": Keyword("max-clients", 2, ValType.INT),
+                 "user": Keyword("user", 2, ValType.ASCII),
+                 "group": Keyword("group", 2, ValType.ASCII),
+                 "persist-key": Keyword("persist-key"),
+                 "persist-tun": Keyword("persist-tun"),
                  "status": Keyword("status", 2, ValType.ASCII),
+                 "log": Keyword("log", 2, ValType.ASCII),
+                 "log-append": Keyword("log-append", 2, ValType.ASCII),
                  "verb": Keyword("verb", 2, ValType.INT),
+                 "mute": Keyword("mute", 2, ValType.INT),
                  "explicit-exit-notify": Keyword("explicit-exit-notify", 2, ValType.ENUM, ["1", "2"]),
                  }
 
@@ -88,6 +96,8 @@ def check_line(line:str, config_keywords:list) -> None:
             raise(BaseException(f"ERROR: Invalid IP network address for keyword '{keyword}'"))
 
     for word in words[1:]:
+        if val_type == ValType.NONE:
+            raise(BaseException(f"ERROR: Keyword '{keyword}' takes no parameters"))
         if not word.isprintable():
             raise(BaseException(f"ERROR: Invalid characters in value for keyword '{keyword}'"))
         if val_type == ValType.INT:
@@ -144,8 +154,10 @@ def main():
         check_config(args.config, config_keywords)
     except BaseException as e:
         print(e)
+        exit(1)
     except:
         print("Unknown error")
+        exit(2)
 
 
 if __name__ == '__main__':

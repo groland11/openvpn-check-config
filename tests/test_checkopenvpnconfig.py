@@ -19,6 +19,8 @@ class ConfigTest(unittest.TestCase):
     def test_parameter_type_int(self):
         with self.assertRaisesRegex(BaseException, "ERROR: Invalid integer value "):
             coc.check_line("keepalive 1O 20", ConfigTest.config_keywords)
+        with self.assertRaisesRegex(BaseException, "ERROR: Invalid integer value "):
+            coc.check_line("keepalive 10 -20", ConfigTest.config_keywords)
 
     def test_parameter_type_ascii(self):
         with self.assertRaisesRegex(BaseException, "ERROR: Invalid ascii value "):
