@@ -38,6 +38,18 @@ class ConfigTest(unittest.TestCase):
         with self.assertRaisesRegex(BaseException, "ERROR: Invalid IP network address "):
             coc.check_line("server 10.10.0.0 255.0.0.0", ConfigTest.config_keywords)
 
+    def test_parameter_type_string(self):
+        with self.assertRaisesRegex(BaseException, "ERROR: Invalid string format "):
+            coc.check_line("push route 10.10.0.0 255.0.0.0", ConfigTest.config_keywords)
+        with self.assertRaisesRegex(BaseException, "ERROR: Invalid string format "):
+            coc.check_line("push \"route 10.10.0.0 255.0.0.0", ConfigTest.config_keywords)
+        with self.assertRaisesRegex(BaseException, "ERROR: Invalid string format "):
+            coc.check_line("push route \"10.10.0.0 255.0.0.0\"", ConfigTest.config_keywords)
+        with self.assertRaisesRegex(BaseException, "ERROR: Invalid string format "):
+            coc.check_line("push \"route \"10.10.0.0 255.0.0.0\"", ConfigTest.config_keywords)
+        with self.assertRaisesRegex(BaseException, "ERROR: Missing string argument "):
+            coc.check_line("push", ConfigTest.config_keywords)
+
 
 if __name__ == '__main__':
     unittest.main()

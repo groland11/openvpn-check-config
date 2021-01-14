@@ -11,10 +11,12 @@ class ValType(Enum):
     NONE = 0
     INT = 1
     ASCII = 2
-    BOOL = 3
-    ENUM = 4
-    IPADDR = 5
-    IPNET = 6
+    STRING = 3      # value contains multiple words enclosed in double quotes
+    BOOL = 4
+    ENUM = 5
+    IPADDR = 6
+    IPNET = 7
+    ROUTE = 8       # specific for 'route' config values
 
 
 class Keyword():
@@ -40,7 +42,10 @@ def parseargs():
 
 def get_config_keywords():
     """Retrieve list of valid configuration keywords"""
-    keywords = { "local": Keyword("local", 2, ValType.IPADDR),
+    keywords = { "client": Keyword("client"),
+                 "mode": Keyword("mode", 2, ValType.ENUM, ["p2p", "server"]),
+                 "server": Keyword("server", 3, ValType.IPNET),
+                 "local": Keyword("local", 2, ValType.IPADDR),
                  "port": Keyword("port", 2, ValType.INT),
                  "proto": Keyword("proto", 2, ValType.ENUM, ["udp", "tcp"]),
                  "dev": Keyword("dev", 2, ValType.ASCII),
@@ -48,8 +53,11 @@ def get_config_keywords():
                  "cert": Keyword("cert", 2, ValType.ASCII),
                  "key": Keyword("key", 2, ValType.ASCII),
                  "dh": Keyword("dh", 2, ValType.ASCII),
-                 "server": Keyword("server", 3, ValType.IPNET),
                  "ifconfig-pool-persist": Keyword("ifconfig-pool-persist", 2, ValType.ASCII),
+                 "push": Keyword("push", 2, ValType.STRING),
+                 "client-config-dir": Keyword("client-config-dir", 2, ValType.ASCII),
+                 "route": Keyword("route", -1, ValType.ROUTE),
+                 "client-to-client": Keyword("client-to-client"),
                  "keepalive": Keyword("keepalive", 3, ValType.INT),
                  "tls-auth": Keyword("tls-auth", 3, ValType.ASCII),
                  "cipher": Keyword("cipher", 2, ValType.ASCII),
@@ -80,16 +88,32 @@ def check_line(line:str, config_keywords:list) -> None:
     if keyword not in config_keywords:
         raise(BaseException(f"ERROR: Unknown keyword '{keyword}'"))
 
-    # Check number of words in line
-    if len(words) != config_keywords[keyword].len:
-        raise(BaseException(f"ERROR: Invalid number of arguments for keyword '{keyword}'"))
-
-    # Check if all values have correct type
     val_type = config_keywords[keyword].type
 
+    # Check special value types
+    if val_type == ValType.STRING:
+        try:
+            val_string = line.split(maxsplit=1)[1]
+            if not val_string.startswith('"') or not val_string.endswith('"')\
+                    or len(val_string) < 3 or val_string.find('"', 1, -1) >= 0:
+                raise(BaseException(f"ERROR: Invalid string format for keyword '{keyword}'"))
+            return
+        except IndexError:
+            raise(BaseException(f"ERROR: Missing string argument for keyword '{keyword}'"))
+
+    if val_type == ValType.ROUTE:
+        ###TODO###
+        return
+
+    # Check number of words in line (excluding strings enclosed in double quotes)
+    if len(words) != config_keywords[keyword].len:
+        raise (BaseException(f"ERROR: Invalid number of arguments for keyword '{keyword}'"))
+
+    # Check all other value types
     if val_type == ValType.IPNET:
         try:
             ipv4net(f"{words[1]}/{words[2]}")
+            return
         except IndexError:
             raise(BaseException(f"ERROR: Missing IP network address part for keyword '{keyword}'"))
         except ValueError:
