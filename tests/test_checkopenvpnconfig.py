@@ -58,6 +58,17 @@ class ConfigTest(unittest.TestCase):
         with self.assertRaisesRegex(BaseException, "ERROR: Invalid optional argument "):
             coc.check_line("server 10.0.0.0 255.0.0.0 nopool invalid", ConfigTest.config_keywords)
 
+    def test_multiple_optional_parameters(self):
+        coc.check_line("remote 10.10.10.1", ConfigTest.config_keywords)
+        coc.check_line("remote 10.10.10.1 1194", ConfigTest.config_keywords)
+        coc.check_line("remote 10.10.10.1 1194 udp", ConfigTest.config_keywords)
+        with self.assertRaisesRegex(BaseException, "ERROR: Invalid integer value "):
+            coc.check_line("remote 10.10.10.1 udp 1194", ConfigTest.config_keywords)
+        with self.assertRaisesRegex(BaseException, "ERROR: Invalid enumeration value "):
+            coc.check_line("remote 10.10.10.1 1194 ucp", ConfigTest.config_keywords)
+        with self.assertRaisesRegex(BaseException, "ERROR: Invalid optional argument "):
+            coc.check_line("remote 10.10.10.1 1194 udp invalid", ConfigTest.config_keywords)
+
     def test_noparameters(self):
         coc.check_line("client", ConfigTest.config_keywords)
         with self.assertRaisesRegex(BaseException, "ERROR: Keyword 'client' takes no parameters"):

@@ -44,6 +44,7 @@ def parseargs():
 def get_config_keywords():
     """Retrieve list of valid configuration keywords"""
     keywords = { "client": Keyword("client"),
+                 "remote": Keyword("remmote", 1, [ValType.IPADDR, ValType.INT, ValType.ENUM], [[], [], ['udp', 'tcp']]),
                  "mode": Keyword("mode", 1, [ValType.ENUM], [["p2p", "server"]]),
                  "server": Keyword("server", 2, [ValType.IPNET, ValType.IPSUBNET, ValType.ENUM], [[], [], ['nopool']]),
                  "local": Keyword("local", 1, [ValType.IPADDR]),
