@@ -16,15 +16,16 @@ class ValType(Enum):
     ENUM = 5
     IPADDR = 6
     IPNET = 7
-    ROUTE = 8       # specific for 'route' config values
+    IPSUBNET = 8
+    ROUTE = 9       # specific for 'route' config values
 
 
 class Keyword():
-    def __init__(self, name, par_len = 1, par_type = ValType.NONE, par_values = None):
+    def __init__(self, name, par_len = 0, par_types = [], par_values = []):
         self.name = name
-        self.len = par_len
-        self.type = par_type
-        self.vals = par_values
+        self.len = par_len       # Number of mandatory arguments
+        self.types = par_types   # Array with argument types, may contain optional arguments
+        self.vals = par_values   # Array with allowed values for each argument
 
 
 def parseargs():
@@ -43,43 +44,43 @@ def parseargs():
 def get_config_keywords():
     """Retrieve list of valid configuration keywords"""
     keywords = { "client": Keyword("client"),
-                 "mode": Keyword("mode", 2, ValType.ENUM, ["p2p", "server"]),
-                 "server": Keyword("server", 3, ValType.IPNET),
-                 "local": Keyword("local", 2, ValType.IPADDR),
-                 "port": Keyword("port", 2, ValType.INT),
-                 "proto": Keyword("proto", 2, ValType.ENUM, ["udp", "tcp"]),
-                 "dev": Keyword("dev", 2, ValType.ASCII),
-                 "ca": Keyword("ca", 2, ValType.ASCII),
-                 "cert": Keyword("cert", 2, ValType.ASCII),
-                 "key": Keyword("key", 2, ValType.ASCII),
-                 "pkcs12": Keyword("pkcs12", 2, ValType.ASCII),
-                 "dh": Keyword("dh", 2, ValType.ASCII),
+                 "mode": Keyword("mode", 1, [ValType.ENUM], [["p2p", "server"]]),
+                 "server": Keyword("server", 2, [ValType.IPNET, ValType.IPSUBNET, ValType.ENUM], [[], [], ['nopool']]),
+                 "local": Keyword("local", 1, [ValType.IPADDR]),
+                 "port": Keyword("port", 1, [ValType.INT]),
+                 "proto": Keyword("proto", 1, [ValType.ENUM], [["udp", "tcp"]]),
+                 "dev": Keyword("dev", 1, [ValType.ASCII]),
+                 "ca": Keyword("ca", 1, [ValType.ASCII]),
+                 "cert": Keyword("cert", 1, [ValType.ASCII]),
+                 "key": Keyword("key", 1, [ValType.ASCII]),
+                 "pkcs12": Keyword("pkcs12", 1, [ValType.ASCII]),
+                 "dh": Keyword("dh", 1, [ValType.ASCII]),
                  "tls-server": Keyword("tls-server"),
                  "tls-client": Keyword("tls-client"),
-                 "tls-version-min": Keyword("tls-version-min", 2, ValType.ENUM, ["1.0", "1.1", "1.2", "1.3"]),
-                 "tls-version-max": Keyword("tls-version-max", 2, ValType.ENUM, ["1.0", "1.1", "1.2", "1.3"]),
-                 "ifconfig-pool-persist": Keyword("ifconfig-pool-persist", 2, ValType.ASCII),
-                 "push": Keyword("push", 2, ValType.STRING),
-                 "client-config-dir": Keyword("client-config-dir", 2, ValType.ASCII),
-                 "route": Keyword("route", -1, ValType.ROUTE),
+                 "tls-version-min": Keyword("tls-version-min", 1, [ValType.ENUM], [["1.0", "1.1", "1.2", "1.3"]]),
+                 "tls-version-max": Keyword("tls-version-max", 1, [ValType.ENUM], [["1.0", "1.1", "1.2", "1.3"]]),
+                 "ifconfig-pool-persist": Keyword("ifconfig-pool-persist", 1, [ValType.ASCII]),
+                 "push": Keyword("push", 1, [ValType.STRING]),
+                 "client-config-dir": Keyword("client-config-dir", 1, [ValType.ASCII]),
+                 "route": Keyword("route", -1, [ValType.ROUTE]),
                  "client-to-client": Keyword("client-to-client"),
-                 "keepalive": Keyword("keepalive", 3, ValType.INT),
-                 "tls-auth": Keyword("tls-auth", 3, ValType.ASCII),
-                 "tls-crypt": Keyword("tls-crypt", 2, ValType.ASCII),
-                 "cipher": Keyword("cipher", 2, ValType.ASCII),
-                 "compress": Keyword("compress", 2, ValType.ENUM, ["lzo", "lz4", "lz4-v2"]),
+                 "keepalive": Keyword("keepalive", 2, [ValType.INT, ValType.INT]),
+                 "tls-auth": Keyword("tls-auth", 1, [ValType.ASCII, ValType.INT], [[], [0, 1]]),
+                 "tls-crypt": Keyword("tls-crypt", 1, [ValType.ASCII]),
+                 "cipher": Keyword("cipher", 1, [ValType.ASCII]),
+                 "compress": Keyword("compress", 1, [ValType.ENUM], [["lzo", "lz4", "lz4-v2"]]),
                  "comp-lzo": Keyword("comp-lzo"),
-                 "max-clients": Keyword("max-clients", 2, ValType.INT),
-                 "user": Keyword("user", 2, ValType.ASCII),
-                 "group": Keyword("group", 2, ValType.ASCII),
+                 "max-clients": Keyword("max-clients", 1, [ValType.INT]),
+                 "user": Keyword("user", 1, [ValType.ASCII]),
+                 "group": Keyword("group", 1, [ValType.ASCII]),
                  "persist-key": Keyword("persist-key"),
                  "persist-tun": Keyword("persist-tun"),
-                 "status": Keyword("status", 2, ValType.ASCII),
-                 "log": Keyword("log", 2, ValType.ASCII),
-                 "log-append": Keyword("log-append", 2, ValType.ASCII),
-                 "verb": Keyword("verb", 2, ValType.INT),
-                 "mute": Keyword("mute", 2, ValType.INT),
-                 "explicit-exit-notify": Keyword("explicit-exit-notify", 2, ValType.ENUM, ["1", "2"]),
+                 "status": Keyword("status", 1, [ValType.ASCII]),
+                 "log": Keyword("log", 1, [ValType.ASCII]),
+                 "log-append": Keyword("log-append", 1, [ValType.ASCII]),
+                 "verb": Keyword("verb", 1, [ValType.INT]),
+                 "mute": Keyword("mute", 1, [ValType.INT]),
+                 "explicit-exit-notify": Keyword("explicit-exit-notify", 1, [ValType.ENUM], [["1", "2"]])
                  }
 
     return keywords
@@ -94,42 +95,48 @@ def check_line(line:str, config_keywords:list) -> None:
     if keyword not in config_keywords:
         raise(BaseException(f"ERROR: Unknown keyword '{keyword}'"))
 
-    val_type = config_keywords[keyword].type
+    # Check number of mandatory arguments
+    if len(words) <= config_keywords[keyword].len:
+        raise(BaseException(f"ERROR: Invalid number of arguments for keyword '{keyword}'"))
 
-    # Check special value types
-    if val_type == ValType.STRING:
-        try:
-            val_string = line.split(maxsplit=1)[1]
-            if not val_string.startswith('"') or not val_string.endswith('"')\
-                    or len(val_string) < 3 or val_string.find('"', 1, -1) >= 0:
-                raise(BaseException(f"ERROR: Invalid string format for keyword '{keyword}'"))
-            return
-        except IndexError:
-            raise(BaseException(f"ERROR: Missing string argument for keyword '{keyword}'"))
+    val_types = config_keywords[keyword].types
 
-    if val_type == ValType.ROUTE:
-        ###TODO###
-        return
-
-    # Check number of words in line (excluding strings enclosed in double quotes)
-    if len(words) != config_keywords[keyword].len:
-        raise (BaseException(f"ERROR: Invalid number of arguments for keyword '{keyword}'"))
-
-    # Check all other value types
-    if val_type == ValType.IPNET:
-        try:
-            ipv4net(f"{words[1]}/{words[2]}")
-            return
-        except IndexError:
-            raise(BaseException(f"ERROR: Missing IP network address part for keyword '{keyword}'"))
-        except ValueError:
-            raise(BaseException(f"ERROR: Invalid IP network address for keyword '{keyword}'"))
-
-    for word in words[1:]:
-        if val_type == ValType.NONE:
+    # Check type for every parameter value
+    for i in range(1, len(words)):
+        if len(val_types) == 0:
             raise(BaseException(f"ERROR: Keyword '{keyword}' takes no parameters"))
-        if not word.isprintable():
+        if i > len(val_types):
+            raise(BaseException(f"ERROR: Invalid optional argument for keyword '{keyword}'"))
+
+        val_type = val_types[i-1]
+        word = words[i]
+
+        if not words[i].isprintable():
             raise(BaseException(f"ERROR: Invalid characters in value for keyword '{keyword}'"))
+
+        if val_type == ValType.STRING:
+            try:
+                val_string = line.split(maxsplit=1)[1]
+                if not val_string.startswith('"') or not val_string.endswith('"')\
+                        or len(val_string) < 3 or val_string.find('"', 1, -1) >= 0:
+                    raise(BaseException(f"ERROR: Invalid string format for keyword '{keyword}'"))
+                return
+            except IndexError:
+                raise(BaseException(f"ERROR: Missing string argument for keyword '{keyword}'"))
+
+        if val_type == ValType.ROUTE:
+            ###TODO###
+            return
+
+        if val_type == ValType.IPNET:
+            try:
+                ipv4net(f"{words[i]}/{words[i+1]}")
+                continue
+            except IndexError:
+                raise(BaseException(f"ERROR: Missing IP network address part for keyword '{keyword}'"))
+            except ValueError:
+                raise(BaseException(f"ERROR: Invalid IP network address for keyword '{keyword}'"))
+
         if val_type == ValType.INT:
             if not word.isnumeric():
                 raise(BaseException(f"ERROR: Invalid integer value '{word}' for keyword '{keyword}'"))
@@ -139,9 +146,9 @@ def check_line(line:str, config_keywords:list) -> None:
             except UnicodeEncodeError:
                 raise(BaseException(f"ERROR: Invalid ascii value '{word}' for keyword '{keyword}'"))
         elif val_type == ValType.ENUM:
-            if config_keywords[keyword].vals is None:
+            if len(config_keywords[keyword].vals) == 0:
                 raise(BaseException(f"ERROR: No enumeration values defined for keyword '{keyword}'"))
-            if word not in config_keywords[keyword].vals:
+            if word not in config_keywords[keyword].vals[i-1]:
                 raise(BaseException(f"ERROR: Invalid enumeration value '{word}' for keyword '{keyword}'"))
         elif val_type == ValType.IPADDR:
             try:

@@ -47,8 +47,21 @@ class ConfigTest(unittest.TestCase):
             coc.check_line("push route \"10.10.0.0 255.0.0.0\"", ConfigTest.config_keywords)
         with self.assertRaisesRegex(BaseException, "ERROR: Invalid string format "):
             coc.check_line("push \"route \"10.10.0.0 255.0.0.0\"", ConfigTest.config_keywords)
-        with self.assertRaisesRegex(BaseException, "ERROR: Missing string argument "):
+        with self.assertRaisesRegex(BaseException, "ERROR: Invalid number of arguments "):
             coc.check_line("push", ConfigTest.config_keywords)
+
+    def test_optional_parameter(self):
+        coc.check_line("server 10.0.0.0 255.0.0.0", ConfigTest.config_keywords)
+        coc.check_line("server 10.0.0.0 255.0.0.0 nopool", ConfigTest.config_keywords)
+        with self.assertRaisesRegex(BaseException, "ERROR: Invalid enumeration value "):
+            coc.check_line("server 10.0.0.0 255.0.0.0 nopoll", ConfigTest.config_keywords)
+        with self.assertRaisesRegex(BaseException, "ERROR: Invalid optional argument "):
+            coc.check_line("server 10.0.0.0 255.0.0.0 nopool invalid", ConfigTest.config_keywords)
+
+    def test_noparameters(self):
+        coc.check_line("client", ConfigTest.config_keywords)
+        with self.assertRaisesRegex(BaseException, "ERROR: Keyword 'client' takes no parameters"):
+            coc.check_line("client 10.0.0.0", ConfigTest.config_keywords)
 
 
 if __name__ == '__main__':
