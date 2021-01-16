@@ -118,14 +118,14 @@ def check_line(line: str, config_keywords: dict) -> None:
     arg_types = config_keywords[keyword].types
 
     # Check type for every argument value
-    for i in range(1, len(words)):
-        if len(arg_types) == 0:
+    for i, word in enumerate(words[1:], start=1):
+        if not arg_types:
             raise(BaseException(f"ERROR: Keyword '{keyword}' takes no arguments"))
         if i > len(arg_types):
             raise(BaseException(f"ERROR: Invalid optional argument for keyword '{keyword}'"))
 
-        word = words[i]              # Current argument about to be checked
-        arg_type = arg_types[i-1]    # Argument type
+        # Current argument type
+        arg_type = arg_types[i-1]
 
         # Unprintable characters may also be ASCII characters
         if not word.isprintable():
@@ -163,7 +163,7 @@ def check_line(line: str, config_keywords: dict) -> None:
             except UnicodeEncodeError:
                 raise(BaseException(f"ERROR: Invalid ascii value '{word}' for keyword '{keyword}'"))
         elif arg_type == ArgTye.ENUM:
-            if len(config_keywords[keyword].vals) == 0:
+            if not config_keywords[keyword].vals:
                 raise(BaseException(f"ERROR: No enumeration values defined for keyword '{keyword}'"))
             for val_enum in config_keywords[keyword].vals[i-1]:
                 regex = re.compile("^" + val_enum + "$")
