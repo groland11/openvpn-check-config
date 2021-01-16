@@ -41,7 +41,7 @@ def parseargs():
     return parser.parse_args()
 
 
-def get_config_keywords():
+def get_config_keywords() -> dict:
     """Retrieve list of valid configuration keywords"""
     keywords = { "client": Keyword("client"),
                  "remote": Keyword("remmote", 1, [ArgTye.IPADDR, ArgTye.INT, ArgTye.ENUM], [[], [], ["udp", "tcp"]]),
@@ -140,21 +140,17 @@ def check_line(line: str, config_keywords: dict) -> None:
                 return
             except IndexError:
                 raise(BaseException(f"ERROR: Missing string argument for keyword '{keyword}'"))
-
-        if arg_type == ArgTye.ROUTE:
+        elif arg_type == ArgTye.ROUTE:
             # TODO
             return
-
-        if arg_type == ArgTye.IPNET:
+        elif arg_type == ArgTye.IPNET:
             try:
                 IPv4Network(f"{words[i]}/{words[i+1]}")
-                continue
             except IndexError:
                 raise(BaseException(f"ERROR: Missing IP network address part for keyword '{keyword}'"))
             except ValueError:
                 raise(BaseException(f"ERROR: Invalid IP network address for keyword '{keyword}'"))
-
-        if arg_type == ArgTye.INT:
+        elif arg_type == ArgTye.INT:
             if not word.isnumeric():
                 raise(BaseException(f"ERROR: Invalid integer value '{word}' for keyword '{keyword}'"))
         elif arg_type == ArgTye.ASCII:
@@ -181,10 +177,7 @@ def check_line(line: str, config_keywords: dict) -> None:
 def check_config(config_file: str, config_keywords: dict) -> None:
     """Checking OpenVPN configuration file for syntax errors"""
     with open(config_file) as file:
-        linenr = 0
-        for line in file:
-            linenr += 1
-
+        for linenr, line in enumerate(file, start=1):
             # Skip empty lines
             if re.match(r"^\s*$", line):
                 continue
