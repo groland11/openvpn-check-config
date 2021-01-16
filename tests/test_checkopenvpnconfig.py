@@ -27,6 +27,11 @@ class ConfigTest(unittest.TestCase):
             coc.check_line("key server.keü", ConfigTest.config_keywords)
 
     def test_parameter_type_enum(self):
+        coc.check_line("resolv-retry 0", ConfigTest.config_keywords)
+        coc.check_line("resolv-retry 10", ConfigTest.config_keywords)
+        coc.check_line("resolv-retry infinite", ConfigTest.config_keywords)
+        with self.assertRaisesRegex(BaseException, "ERROR: Invalid number of arguments "):
+            coc.check_line("resolv-retry   ", ConfigTest.config_keywords)
         with self.assertRaisesRegex(BaseException, "ERROR: Invalid enumeration value "):
             coc.check_line("proto ucp", ConfigTest.config_keywords)
 

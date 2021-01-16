@@ -44,9 +44,11 @@ def parseargs():
 def get_config_keywords():
     """Retrieve list of valid configuration keywords"""
     keywords = { "client": Keyword("client"),
-                 "remote": Keyword("remmote", 1, [ValType.IPADDR, ValType.INT, ValType.ENUM], [[], [], ['udp', 'tcp']]),
+                 "remote": Keyword("remmote", 1, [ValType.IPADDR, ValType.INT, ValType.ENUM], [[], [], ["udp", "tcp"]]),
+                 "resolv-retry": Keyword("resolv-retry", 1, [ValType.ENUM], [["infinite", "\d+"]]),
+                 "nobind": Keyword("nobind"),
                  "mode": Keyword("mode", 1, [ValType.ENUM], [["p2p", "server"]]),
-                 "server": Keyword("server", 2, [ValType.IPNET, ValType.IPSUBNET, ValType.ENUM], [[], [], ['nopool']]),
+                 "server": Keyword("server", 2, [ValType.IPNET, ValType.IPSUBNET, ValType.ENUM], [[], [], ["nopool"]]),
                  "local": Keyword("local", 1, [ValType.IPADDR]),
                  "port": Keyword("port", 1, [ValType.INT]),
                  "proto": Keyword("proto", 1, [ValType.ENUM], [["udp", "tcp"]]),
@@ -60,17 +62,27 @@ def get_config_keywords():
                  "tls-client": Keyword("tls-client"),
                  "tls-version-min": Keyword("tls-version-min", 1, [ValType.ENUM], [["1.0", "1.1", "1.2", "1.3"]]),
                  "tls-version-max": Keyword("tls-version-max", 1, [ValType.ENUM], [["1.0", "1.1", "1.2", "1.3"]]),
+                 "remote-cert-tls": Keyword("remote-cert-tls", 1, [ValType.ENUM], [["server", "client"]]),
                  "ifconfig-pool-persist": Keyword("ifconfig-pool-persist", 1, [ValType.ASCII]),
+                 "ifconfig": Keyword("ifconfig", 2, [ValType.IPADDR, ValType.IPADDR]),
                  "push": Keyword("push", 1, [ValType.STRING]),
                  "client-config-dir": Keyword("client-config-dir", 1, [ValType.ASCII]),
                  "route": Keyword("route", -1, [ValType.ROUTE]),
+                 "route-metric": Keyword("route-metric", 1, [ValType.INT]),
                  "client-to-client": Keyword("client-to-client"),
                  "keepalive": Keyword("keepalive", 2, [ValType.INT, ValType.INT]),
-                 "tls-auth": Keyword("tls-auth", 1, [ValType.ASCII, ValType.INT], [[], [0, 1]]),
+                 "tls-auth": Keyword("tls-auth", 1, [ValType.ASCII, ValType.ENUM], [[], ["0", "1"]]),
                  "tls-crypt": Keyword("tls-crypt", 1, [ValType.ASCII]),
                  "cipher": Keyword("cipher", 1, [ValType.ASCII]),
                  "compress": Keyword("compress", 1, [ValType.ENUM], [["lzo", "lz4", "lz4-v2"]]),
                  "comp-lzo": Keyword("comp-lzo"),
+                 "mtu-test": Keyword("mtutest"),
+                 "tun-mtu": Keyword("tun-mtu", 1, [ValType.INT]),
+                 "link-mtu": Keyword("link-mtu", 1, [ValType.INT]),
+                 "fregment": Keyword("fragment", 1, [ValType.INT]),
+                 "mss-fix": Keyword("mss-fix", 1, [ValType.INT]),
+                 "sndbuf": Keyword("sndbuf", 1, [ValType.INT]),
+                 "rcvbuf": Keyword("rcvbuf", 1, [ValType.INT]),
                  "max-clients": Keyword("max-clients", 1, [ValType.INT]),
                  "user": Keyword("user", 1, [ValType.ASCII]),
                  "group": Keyword("group", 1, [ValType.ASCII]),
@@ -81,6 +93,8 @@ def get_config_keywords():
                  "log-append": Keyword("log-append", 1, [ValType.ASCII]),
                  "verb": Keyword("verb", 1, [ValType.INT]),
                  "mute": Keyword("mute", 1, [ValType.INT]),
+                 "mute-replay-warnings": Keyword("mute-replay-warnings"),
+                 "replay-window": Keyword("replay-window", 1, [ValType.INT, ValType.INT]),
                  "explicit-exit-notify": Keyword("explicit-exit-notify", 1, [ValType.ENUM], [["1", "2"]])
                  }
 
@@ -149,7 +163,11 @@ def check_line(line:str, config_keywords:list) -> None:
         elif val_type == ValType.ENUM:
             if len(config_keywords[keyword].vals) == 0:
                 raise(BaseException(f"ERROR: No enumeration values defined for keyword '{keyword}'"))
-            if word not in config_keywords[keyword].vals[i-1]:
+            for val_enum in config_keywords[keyword].vals[i-1]:
+                regex = re.compile("^" + val_enum + "$")
+                if regex.match(word):
+                    break
+            else:
                 raise(BaseException(f"ERROR: Invalid enumeration value '{word}' for keyword '{keyword}'"))
         elif val_type == ValType.IPADDR:
             try:
