@@ -3,25 +3,25 @@
 import argparse
 import re
 from enum import Enum
-from ipaddress import IPv4Address as ipv4, IPv4Network as ipv4net, AddressValueError
+from ipaddress import IPv4Address, IPv4Network, AddressValueError
 
 
-class ValType(Enum):
-    """Enumeration for all possible value types"""
+class ArgTye(Enum):
+    """Enumeration for all possible argument types"""
     NONE = 0
     INT = 1
     ASCII = 2
-    STRING = 3      # value contains multiple words enclosed in double quotes
+    STRING = 3      # argument contains multiple words enclosed in double quotes
     BOOL = 4
     ENUM = 5
     IPADDR = 6
     IPNET = 7
     IPSUBNET = 8
-    ROUTE = 9       # specific for 'route' config values
+    ROUTE = 9       # specific for 'route' keyword
 
 
-class Keyword():
-    def __init__(self, name, par_len = 0, par_types = [], par_values = []):
+class Keyword:
+    def __init__(self, name, par_len=0, par_types=[], par_values=[]):
         self.name = name
         self.len = par_len       # Number of mandatory arguments
         self.types = par_types   # Array with argument types, may contain optional arguments
@@ -44,64 +44,64 @@ def parseargs():
 def get_config_keywords():
     """Retrieve list of valid configuration keywords"""
     keywords = { "client": Keyword("client"),
-                 "remote": Keyword("remmote", 1, [ValType.IPADDR, ValType.INT, ValType.ENUM], [[], [], ["udp", "tcp"]]),
-                 "resolv-retry": Keyword("resolv-retry", 1, [ValType.ENUM], [["infinite", "\d+"]]),
+                 "remote": Keyword("remmote", 1, [ArgTye.IPADDR, ArgTye.INT, ArgTye.ENUM], [[], [], ["udp", "tcp"]]),
+                 "resolv-retry": Keyword("resolv-retry", 1, [ArgTye.ENUM], [["infinite", "\d+"]]),
                  "nobind": Keyword("nobind"),
-                 "mode": Keyword("mode", 1, [ValType.ENUM], [["p2p", "server"]]),
-                 "server": Keyword("server", 2, [ValType.IPNET, ValType.IPSUBNET, ValType.ENUM], [[], [], ["nopool"]]),
-                 "local": Keyword("local", 1, [ValType.IPADDR]),
-                 "port": Keyword("port", 1, [ValType.INT]),
-                 "proto": Keyword("proto", 1, [ValType.ENUM], [["udp", "tcp"]]),
-                 "dev": Keyword("dev", 1, [ValType.ASCII]),
-                 "ca": Keyword("ca", 1, [ValType.ASCII]),
-                 "cert": Keyword("cert", 1, [ValType.ASCII]),
-                 "key": Keyword("key", 1, [ValType.ASCII]),
-                 "pkcs12": Keyword("pkcs12", 1, [ValType.ASCII]),
-                 "dh": Keyword("dh", 1, [ValType.ASCII]),
+                 "mode": Keyword("mode", 1, [ArgTye.ENUM], [["p2p", "server"]]),
+                 "server": Keyword("server", 2, [ArgTye.IPNET, ArgTye.IPSUBNET, ArgTye.ENUM], [[], [], ["nopool"]]),
+                 "local": Keyword("local", 1, [ArgTye.IPADDR]),
+                 "port": Keyword("port", 1, [ArgTye.INT]),
+                 "proto": Keyword("proto", 1, [ArgTye.ENUM], [["udp", "tcp"]]),
+                 "dev": Keyword("dev", 1, [ArgTye.ASCII]),
+                 "ca": Keyword("ca", 1, [ArgTye.ASCII]),
+                 "cert": Keyword("cert", 1, [ArgTye.ASCII]),
+                 "key": Keyword("key", 1, [ArgTye.ASCII]),
+                 "pkcs12": Keyword("pkcs12", 1, [ArgTye.ASCII]),
+                 "dh": Keyword("dh", 1, [ArgTye.ASCII]),
                  "tls-server": Keyword("tls-server"),
                  "tls-client": Keyword("tls-client"),
-                 "tls-version-min": Keyword("tls-version-min", 1, [ValType.ENUM], [["1.0", "1.1", "1.2", "1.3"]]),
-                 "tls-version-max": Keyword("tls-version-max", 1, [ValType.ENUM], [["1.0", "1.1", "1.2", "1.3"]]),
-                 "remote-cert-tls": Keyword("remote-cert-tls", 1, [ValType.ENUM], [["server", "client"]]),
-                 "ifconfig-pool-persist": Keyword("ifconfig-pool-persist", 1, [ValType.ASCII]),
-                 "ifconfig": Keyword("ifconfig", 2, [ValType.IPADDR, ValType.IPADDR]),
-                 "push": Keyword("push", 1, [ValType.STRING]),
-                 "client-config-dir": Keyword("client-config-dir", 1, [ValType.ASCII]),
-                 "route": Keyword("route", -1, [ValType.ROUTE]),
-                 "route-metric": Keyword("route-metric", 1, [ValType.INT]),
+                 "tls-version-min": Keyword("tls-version-min", 1, [ArgTye.ENUM], [["1.0", "1.1", "1.2", "1.3"]]),
+                 "tls-version-max": Keyword("tls-version-max", 1, [ArgTye.ENUM], [["1.0", "1.1", "1.2", "1.3"]]),
+                 "remote-cert-tls": Keyword("remote-cert-tls", 1, [ArgTye.ENUM], [["server", "client"]]),
+                 "ifconfig-pool-persist": Keyword("ifconfig-pool-persist", 1, [ArgTye.ASCII]),
+                 "ifconfig": Keyword("ifconfig", 2, [ArgTye.IPADDR, ArgTye.IPADDR]),
+                 "push": Keyword("push", 1, [ArgTye.STRING]),
+                 "client-config-dir": Keyword("client-config-dir", 1, [ArgTye.ASCII]),
+                 "route": Keyword("route", -1, [ArgTye.ROUTE]),
+                 "route-metric": Keyword("route-metric", 1, [ArgTye.INT]),
                  "client-to-client": Keyword("client-to-client"),
-                 "keepalive": Keyword("keepalive", 2, [ValType.INT, ValType.INT]),
-                 "tls-auth": Keyword("tls-auth", 1, [ValType.ASCII, ValType.ENUM], [[], ["0", "1"]]),
-                 "tls-crypt": Keyword("tls-crypt", 1, [ValType.ASCII]),
-                 "cipher": Keyword("cipher", 1, [ValType.ASCII]),
-                 "compress": Keyword("compress", 1, [ValType.ENUM], [["lzo", "lz4", "lz4-v2"]]),
+                 "keepalive": Keyword("keepalive", 2, [ArgTye.INT, ArgTye.INT]),
+                 "tls-auth": Keyword("tls-auth", 1, [ArgTye.ASCII, ArgTye.ENUM], [[], ["0", "1"]]),
+                 "tls-crypt": Keyword("tls-crypt", 1, [ArgTye.ASCII]),
+                 "cipher": Keyword("cipher", 1, [ArgTye.ASCII]),
+                 "compress": Keyword("compress", 1, [ArgTye.ENUM], [["lzo", "lz4", "lz4-v2"]]),
                  "comp-lzo": Keyword("comp-lzo"),
                  "mtu-test": Keyword("mtutest"),
-                 "tun-mtu": Keyword("tun-mtu", 1, [ValType.INT]),
-                 "link-mtu": Keyword("link-mtu", 1, [ValType.INT]),
-                 "fregment": Keyword("fragment", 1, [ValType.INT]),
-                 "mss-fix": Keyword("mss-fix", 1, [ValType.INT]),
-                 "sndbuf": Keyword("sndbuf", 1, [ValType.INT]),
-                 "rcvbuf": Keyword("rcvbuf", 1, [ValType.INT]),
-                 "max-clients": Keyword("max-clients", 1, [ValType.INT]),
-                 "user": Keyword("user", 1, [ValType.ASCII]),
-                 "group": Keyword("group", 1, [ValType.ASCII]),
+                 "tun-mtu": Keyword("tun-mtu", 1, [ArgTye.INT]),
+                 "link-mtu": Keyword("link-mtu", 1, [ArgTye.INT]),
+                 "fregment": Keyword("fragment", 1, [ArgTye.INT]),
+                 "mss-fix": Keyword("mss-fix", 1, [ArgTye.INT]),
+                 "sndbuf": Keyword("sndbuf", 1, [ArgTye.INT]),
+                 "rcvbuf": Keyword("rcvbuf", 1, [ArgTye.INT]),
+                 "max-clients": Keyword("max-clients", 1, [ArgTye.INT]),
+                 "user": Keyword("user", 1, [ArgTye.ASCII]),
+                 "group": Keyword("group", 1, [ArgTye.ASCII]),
                  "persist-key": Keyword("persist-key"),
                  "persist-tun": Keyword("persist-tun"),
-                 "status": Keyword("status", 1, [ValType.ASCII]),
-                 "log": Keyword("log", 1, [ValType.ASCII]),
-                 "log-append": Keyword("log-append", 1, [ValType.ASCII]),
-                 "verb": Keyword("verb", 1, [ValType.INT]),
-                 "mute": Keyword("mute", 1, [ValType.INT]),
+                 "status": Keyword("status", 1, [ArgTye.ASCII]),
+                 "log": Keyword("log", 1, [ArgTye.ASCII]),
+                 "log-append": Keyword("log-append", 1, [ArgTye.ASCII]),
+                 "verb": Keyword("verb", 1, [ArgTye.INT]),
+                 "mute": Keyword("mute", 1, [ArgTye.INT]),
                  "mute-replay-warnings": Keyword("mute-replay-warnings"),
-                 "replay-window": Keyword("replay-window", 1, [ValType.INT, ValType.INT]),
-                 "explicit-exit-notify": Keyword("explicit-exit-notify", 1, [ValType.ENUM], [["1", "2"]])
+                 "replay-window": Keyword("replay-window", 1, [ArgTye.INT, ArgTye.INT]),
+                 "explicit-exit-notify": Keyword("explicit-exit-notify", 1, [ArgTye.ENUM], [["1", "2"]])
                  }
 
     return keywords
 
 
-def check_line(line:str, config_keywords:list) -> None:
+def check_line(line: str, config_keywords: dict) -> None:
     """Syntax checking single configuration line"""
     words = line.split()
     keyword = words[0]
@@ -114,22 +114,24 @@ def check_line(line:str, config_keywords:list) -> None:
     if len(words) <= config_keywords[keyword].len:
         raise(BaseException(f"ERROR: Invalid number of arguments for keyword '{keyword}'"))
 
-    val_types = config_keywords[keyword].types
+    # Array with type for each argument
+    arg_types = config_keywords[keyword].types
 
-    # Check type for every parameter value
+    # Check type for every argument value
     for i in range(1, len(words)):
-        if len(val_types) == 0:
-            raise(BaseException(f"ERROR: Keyword '{keyword}' takes no parameters"))
-        if i > len(val_types):
+        if len(arg_types) == 0:
+            raise(BaseException(f"ERROR: Keyword '{keyword}' takes no arguments"))
+        if i > len(arg_types):
             raise(BaseException(f"ERROR: Invalid optional argument for keyword '{keyword}'"))
 
-        val_type = val_types[i-1]
-        word = words[i]
+        word = words[i]              # Current argument about to be checked
+        arg_type = arg_types[i-1]    # Argument type
 
-        if not words[i].isprintable():
+        # Unprintable characters may also be ASCII characters
+        if not word.isprintable():
             raise(BaseException(f"ERROR: Invalid characters in value for keyword '{keyword}'"))
 
-        if val_type == ValType.STRING:
+        if arg_type == ArgTye.STRING:
             try:
                 val_string = line.split(maxsplit=1)[1]
                 if not val_string.startswith('"') or not val_string.endswith('"')\
@@ -139,28 +141,28 @@ def check_line(line:str, config_keywords:list) -> None:
             except IndexError:
                 raise(BaseException(f"ERROR: Missing string argument for keyword '{keyword}'"))
 
-        if val_type == ValType.ROUTE:
-            ###TODO###
+        if arg_type == ArgTye.ROUTE:
+            # TODO
             return
 
-        if val_type == ValType.IPNET:
+        if arg_type == ArgTye.IPNET:
             try:
-                ipv4net(f"{words[i]}/{words[i+1]}")
+                IPv4Network(f"{words[i]}/{words[i+1]}")
                 continue
             except IndexError:
                 raise(BaseException(f"ERROR: Missing IP network address part for keyword '{keyword}'"))
             except ValueError:
                 raise(BaseException(f"ERROR: Invalid IP network address for keyword '{keyword}'"))
 
-        if val_type == ValType.INT:
+        if arg_type == ArgTye.INT:
             if not word.isnumeric():
                 raise(BaseException(f"ERROR: Invalid integer value '{word}' for keyword '{keyword}'"))
-        elif val_type == ValType.ASCII:
+        elif arg_type == ArgTye.ASCII:
             try:
                 word.encode("ascii")
             except UnicodeEncodeError:
                 raise(BaseException(f"ERROR: Invalid ascii value '{word}' for keyword '{keyword}'"))
-        elif val_type == ValType.ENUM:
+        elif arg_type == ArgTye.ENUM:
             if len(config_keywords[keyword].vals) == 0:
                 raise(BaseException(f"ERROR: No enumeration values defined for keyword '{keyword}'"))
             for val_enum in config_keywords[keyword].vals[i-1]:
@@ -169,14 +171,14 @@ def check_line(line:str, config_keywords:list) -> None:
                     break
             else:
                 raise(BaseException(f"ERROR: Invalid enumeration value '{word}' for keyword '{keyword}'"))
-        elif val_type == ValType.IPADDR:
+        elif arg_type == ArgTye.IPADDR:
             try:
-                ip_address = ipv4(word)
+                ip_address = IPv4Address(word)
             except AddressValueError:
                 raise(BaseException(f"ERROR: Invalid IP address '{word}' for keyword '{keyword}'"))
 
 
-def check_config(config_file:str, config_keywords:list) -> None:
+def check_config(config_file: str, config_keywords: dict) -> None:
     """Checking OpenVPN configuration file for syntax errors"""
     with open(config_file) as file:
         linenr = 0
@@ -184,9 +186,13 @@ def check_config(config_file:str, config_keywords:list) -> None:
             linenr += 1
 
             # Skip empty lines
-            if re.match(r"^\s*$", line): continue
+            if re.match(r"^\s*$", line):
+                continue
+
             # Skip comments
-            if re.match(r"^\s*(#|;)+", line): continue
+            if re.match(r"^\s*[#;]+", line):
+                continue
+
             # Remove comments at end of line
             pos = line.find("#")
             if pos > 0:
@@ -211,9 +217,6 @@ def main():
     except BaseException as e:
         print(e)
         exit(1)
-    except:
-        print("Unknown error")
-        exit(2)
 
 
 if __name__ == '__main__':
