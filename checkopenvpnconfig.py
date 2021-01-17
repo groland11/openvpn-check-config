@@ -174,8 +174,11 @@ def check_line(line: str, config_keywords: dict) -> None:
                 raise(BaseException(f"ERROR: Invalid IP address '{word}' for keyword '{keyword}'"))
 
 
-def check_config(config_file: str, config_keywords: dict) -> None:
+def check_config(config_file: str, config_keywords: dict) -> tuple:
     """Checking OpenVPN configuration file for syntax errors"""
+    ret = 0
+    output = []
+
     with open(config_file) as file:
         for linenr, line in enumerate(file, start=1):
             # Skip empty lines
@@ -195,21 +198,40 @@ def check_config(config_file: str, config_keywords: dict) -> None:
             try:
                 check_line(line.strip(), config_keywords)
             except BaseException as e:
-                raise(BaseException(f"{linenr:>4} " + e.__str__()))
+                output.append(f"{linenr:>4} " + e.__str__())
+                ret = 1
+                continue
 
-            print(f"{linenr:>4} OK:", line.strip())
+            output.append(f"{linenr:>4} OK: {line.strip()}")
+
+        return ret, output
 
 
 def main():
     """Main program flow"""
+    ret: int = 1
+    errcount: int = 0
     args = parseargs()
     config_keywords = get_config_keywords()
 
     try:
-        check_config(args.config, config_keywords)
+        output: list
+        ret, output = check_config(args.config, config_keywords)
+
+        for line in output:
+            if line.find("ERROR") >= 0:
+                print(line)
+                errcount += 1
+            elif args.debug:
+                print(line)
+
+        if args.verbose:
+            print(f"Stats: {len(output)} line(s) with {errcount} error(s)")
     except BaseException as e:
         print(e)
-        exit(1)
+        exit(2)
+
+    exit(ret)
 
 
 if __name__ == '__main__':
