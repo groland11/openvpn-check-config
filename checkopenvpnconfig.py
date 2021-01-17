@@ -101,7 +101,7 @@ def get_config_keywords() -> dict:
     return keywords
 
 
-def check_line(line: str, config_keywords: dict) -> None:
+def check_line(line: str, config_keywords: dict) -> int:
     """Syntax checking single configuration line"""
     words = line.split()
     keyword = words[0]
@@ -137,12 +137,12 @@ def check_line(line: str, config_keywords: dict) -> None:
                 if not val_string.startswith('"') or not val_string.endswith('"')\
                         or len(val_string) < 3 or val_string.find('"', 1, -1) >= 0:
                     raise(BaseException(f"ERROR: Invalid string format for keyword '{keyword}'"))
-                return
+                return 1
             except IndexError:
                 raise(BaseException(f"ERROR: Missing string argument for keyword '{keyword}'"))
         elif arg_type == ArgTye.ROUTE:
             # TODO
-            return
+            return 0
         elif arg_type == ArgTye.IPNET:
             try:
                 IPv4Network(f"{words[i]}/{words[i+1]}")
@@ -173,10 +173,12 @@ def check_line(line: str, config_keywords: dict) -> None:
             except AddressValueError:
                 raise(BaseException(f"ERROR: Invalid IP address '{word}' for keyword '{keyword}'"))
 
+    return 0
+
 
 def check_config(config_file: str, config_keywords: dict) -> tuple:
     """Checking OpenVPN configuration file for syntax errors"""
-    ret = 0
+    ret = 1
     output = []
 
     with open(config_file) as file:
@@ -196,7 +198,7 @@ def check_config(config_file: str, config_keywords: dict) -> tuple:
 
             # Check syntax for each line
             try:
-                check_line(line.strip(), config_keywords)
+                ret = check_line(line.strip(), config_keywords)
             except BaseException as e:
                 output.append(f"{linenr:>4} " + e.__str__())
                 ret = 1
