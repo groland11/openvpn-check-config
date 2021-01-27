@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 
 import argparse
+import logging
 import re
+import sys
 from enum import Enum
 from ipaddress import IPv4Address, IPv4Network, AddressValueError
 
@@ -28,6 +30,11 @@ class Keyword:
         self.vals = par_values   # Array with allowed values for each argument
 
 
+class LogFilter(logging.Filter):
+    def filter(self, record):
+        return record.levelno in (logging.DEBUG, logging.INFO)
+
+
 def parseargs():
     """Process command line arguments"""
     parser = argparse.ArgumentParser(description="Check OpenVPN configuration file")
@@ -39,6 +46,27 @@ def parseargs():
                         help="configuration file to be checked")
     parser.add_argument("-V", "--version", action="version", version="1.0.0")
     return parser.parse_args()
+
+
+def get_logger(debug: bool = False) -> logging.Logger:
+    """Retrieve logging object"""
+    logger = logging.getLogger()
+    if debug:
+        logger.setLevel(logging.DEBUG)
+    else:
+        logger.setLevel(logging.INFO)
+
+    h1 = logging.StreamHandler(sys.stdout)
+    h1.setLevel(logging.DEBUG)
+    h1.addFilter(LogFilter())
+
+    h2 = logging.StreamHandler(sys.stderr)
+    h2.setLevel(logging.ERROR)
+
+    logger.addHandler(h1)
+    logger.addHandler(h2)
+
+    return logger
 
 
 def get_config_keywords() -> dict:
@@ -179,6 +207,7 @@ def check_line(line: str, config_keywords: dict) -> int:
 def check_config(config_file: str, config_keywords: dict) -> tuple:
     """Checking OpenVPN configuration file for syntax errors"""
     ret = 1
+    errcount = 0
     output = []
 
     with open(config_file) as file:
@@ -201,11 +230,13 @@ def check_config(config_file: str, config_keywords: dict) -> tuple:
                 ret = check_line(line.strip(), config_keywords)
             except BaseException as e:
                 output.append(f"{linenr:>4} " + e.__str__())
-                ret = 1
+                errcount += 1
                 continue
 
             output.append(f"{linenr:>4} OK: {line.strip()}")
 
+        if errcount > 0:
+            ret = 1
         return ret, output
 
 
@@ -214,6 +245,7 @@ def main():
     ret: int = 1
     errcount: int = 0
     args = parseargs()
+    logger = get_logger(args.debug)
     config_keywords = get_config_keywords()
 
     try:
@@ -222,15 +254,15 @@ def main():
 
         for line in output:
             if line.find("ERROR") >= 0:
-                print(line)
+                logger.error(line)
                 errcount += 1
-            elif args.debug:
-                print(line)
+            else:
+                logger.debug(line)
 
         if args.verbose:
-            print(f"Stats: {len(output)} line(s) with {errcount} error(s)")
+            logger.info(f"Stats: {len(output)} line(s) with {errcount} error(s)")
     except BaseException as e:
-        print(e)
+        logger.error(e)
         exit(2)
 
     exit(ret)

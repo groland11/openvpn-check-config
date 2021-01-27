@@ -7,7 +7,27 @@ class ConfigTestFile(unittest.TestCase):
     config_keywords = coc.get_config_keywords()
 
     def test_emptyfile(self):
-        self.assertEquals(coc.check_config("empty.conf", ConfigTestFile.config_keywords), (1, []))
+        self.assertEqual(coc.check_config("empty.conf", ConfigTestFile.config_keywords), (1, []))
+
+    def test_server_ok(self):
+        ret, lines = coc.check_config("server.conf", ConfigTestFile.config_keywords)
+        self.assertEqual(ret, 0)
+
+        for line in lines:
+            self.assertGreater(line.find("OK"), 0)
+            self.assertEqual(line.find("ERROR"), -1)
+
+    def test_server_wrongkeyword(self):
+        ret, lines = coc.check_config("server_error01.conf", ConfigTestFile.config_keywords)
+        self.assertEqual(ret, 1)
+
+    def test_server_missingvalue(self):
+        ret, lines = coc.check_config("server_error02.conf", ConfigTestFile.config_keywords)
+        self.assertEqual(ret, 1)
+
+    def test_server_wrongvaluetype(self):
+        ret, lines = coc.check_config("server_error03.conf", ConfigTestFile.config_keywords)
+        self.assertEqual(ret, 1)
 
 
 class ConfigTestKeywords(unittest.TestCase):
